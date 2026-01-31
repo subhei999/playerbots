@@ -1133,6 +1133,45 @@ void PlayerbotAI::RecordRecentPvpAttacker(Unit* victim, Unit* attacker)
     }
 
     updateBot(victimOwner);
+
+    if (sRandomPlayerbotMgr.IsRandomBot(victimOwner) && attackerPlayer->isRealPlayer())
+    {
+        uint32 aggressive = sRandomPlayerbotMgr.GetValue(victimOwner, "world_pvp_aggressive");
+        if (!aggressive)
+        {
+            PlayerbotAI* victimAi = victimOwner->GetPlayerbotAI();
+            if (victimAi)
+            {
+                time_t lastShout = victimAi->GetAiObjectContext()->GetValue<time_t>("last said", "help")->Get();
+                if (time(0) - lastShout > 30)
+                {
+                    victimAi->GetAiObjectContext()->GetValue<time_t>("last said", "help")->Set(time(0));
+
+                    std::vector<std::string> msgs = { "Help me!", "I'm under attack!", "Assist me!", "Help!" };
+                    std::string msg = msgs[urand(0, msgs.size() - 1)];
+                    victimAi->Yell(msg);
+
+                    for (auto& i : sRandomPlayerbotMgr.GetPlayers())
+                    {
+                        Player* bot = i.second;
+                        if (!bot || !bot->IsInWorld() || bot == victimOwner || bot == attackerPlayer)
+                            continue;
+
+                        if (bot->GetMapId() != victimOwner->GetMapId())
+                            continue;
+
+                        if (sServerFacade.GetDistance2d(victimOwner, bot) <= sPlayerbotAIConfig.reactDistance * 3)
+                        {
+                            if (PlayerbotAI* botAi = bot->GetPlayerbotAI())
+                            {
+                                botAi->UpdateRecentPvpAttacker(attackerPlayer);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 void PlayerbotAI::UpdateRecentPvpAttacker(Player* attacker)
