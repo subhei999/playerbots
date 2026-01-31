@@ -307,6 +307,8 @@ public:
 
     uint32 broadcastChanceGuildManagement;
 
+    uint32 probHelpShout;
+
     uint32 guildRepliesRate;
 
     uint32 botAcceptDuelMinimumLevel;
