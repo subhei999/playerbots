@@ -1143,7 +1143,7 @@ void PlayerbotAI::RecordRecentPvpAttacker(Unit* victim, Unit* attacker)
             if (victimAi)
             {
                 time_t lastShout = victimAi->GetAiObjectContext()->GetValue<time_t>("last said", "help")->Get();
-                if (time(0) - lastShout > 30)
+                if (time(0) - lastShout > 30 && urand(0, 100) < sPlayerbotAIConfig.probHelpShout)
                 {
                     victimAi->GetAiObjectContext()->GetValue<time_t>("last said", "help")->Set(time(0));
 
