@@ -30,7 +30,21 @@ std::vector<std::string> ConfigAccess::GetValues(const std::string& name) const
     return values;
 };
 
-INSTANTIATE_SINGLETON_1(PlayerbotAIConfig);
+// Intentionally heap-allocated and never freed.
+// A function-local static causes a static destruction order fiasco on
+// shutdown (Config's unordered_map nodes are freed after their
+// dependencies). INSTANTIATE_SINGLETON_1 uses operator new in a
+// template instantiated across TUs, hitting an 8-byte sizeof mismatch
+// (ODR violation in the build). Heap-allocating here in the .cpp
+// avoids both problems: correct sizeof, no atexit destructor.
+static PlayerbotAIConfig* s_playerbotAIConfig = nullptr;
+
+PlayerbotAIConfig& GetPlayerbotAIConfig()
+{
+    if (!s_playerbotAIConfig)
+        s_playerbotAIConfig = new PlayerbotAIConfig();
+    return *s_playerbotAIConfig;
+}
 
 PlayerbotAIConfig::PlayerbotAIConfig()
 : enabled(false)

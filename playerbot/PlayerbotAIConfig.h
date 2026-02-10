@@ -413,5 +413,6 @@ private:
     Config config;
 };
 
-#define sPlayerbotAIConfig MaNGOS::Singleton<PlayerbotAIConfig>::Instance()
+PlayerbotAIConfig& GetPlayerbotAIConfig();
+#define sPlayerbotAIConfig GetPlayerbotAIConfig()
 
