@@ -68,9 +68,19 @@ std::set<std::string> PlayerbotAI::unsecuredCommands;
 
 uint32 PlayerbotChatHandler::extractQuestId(std::string str)
 {
-    char* source = (char*)str.c_str();
-    char* cId = ExtractKeyFromLink(&source,"Hquest");
-    return cId ? atol(cId) : 0;
+    // Thread-safe implementation: avoids strtok-based ChatHandler::Extract*
+    // functions which are not safe for concurrent use from map worker threads.
+
+    // Check for quest link: |cXXXXXXXX|Hquest:ID:LEVEL|h[...]|h|r
+    size_t pos = str.find("|Hquest:");
+    if (pos != std::string::npos)
+        return static_cast<uint32>(strtoul(str.c_str() + pos + 8, nullptr, 10));
+
+    // Try parsing as plain number
+    if (!str.empty() && str[0] >= '0' && str[0] <= '9')
+        return static_cast<uint32>(strtoul(str.c_str(), nullptr, 10));
+
+    return 0;
 }
 
 void PacketHandlingHelper::AddHandler(uint16 opcode, std::string handler, bool shouldDelay)

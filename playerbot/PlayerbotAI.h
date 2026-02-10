@@ -29,8 +29,27 @@ public:
     uint32 extractQuestId(std::string str);
     uint32 extractSpellId(std::string str)
     {
-        char* source = (char*)str.c_str();
-        return ExtractSpellIdFromLink(&source);
+        // Thread-safe implementation: avoids strtok-based ChatHandler::Extract*
+        // functions which are not safe for concurrent use from map worker threads.
+
+        // Check for spell link: |cXXXXXXXX|Hspell:ID|h[...]|h|r
+        size_t pos = str.find("|Hspell:");
+        if (pos != std::string::npos)
+            return static_cast<uint32>(strtoul(str.c_str() + pos + 8, nullptr, 10));
+
+        // Check for enchant link: |cXXXXXXXX|Henchant:ID|h[...]|h|r
+        pos = str.find("|Henchant:");
+        if (pos != std::string::npos)
+            return static_cast<uint32>(strtoul(str.c_str() + pos + 10, nullptr, 10));
+
+        // Note: talent links (|Htalent:ID,RANK|) require DBC lookup not
+        // available here; they are not expected from bot spell qualifiers.
+
+        // Try parsing as plain number
+        if (!str.empty() && str[0] >= '0' && str[0] <= '9')
+            return static_cast<uint32>(strtoul(str.c_str(), nullptr, 10));
+
+        return 0;
     }
 };
 
