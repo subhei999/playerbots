@@ -1528,9 +1528,11 @@ void PlayerbotAI::HandleCommand(uint32 type, const std::string& text, Player& fr
         else
         {
             uint32 aggressive = sRandomPlayerbotMgr.GetValue(bot, "world_pvp_aggressive");
+            bool effective = sRandomPlayerbotMgr.IsWorldPvpAggressive(bot);
             std::string storedChance = sRandomPlayerbotMgr.GetData(bot->GetGUIDLow(), "world_pvp_aggressive");
             std::ostringstream out;
             out << "world_pvp_aggressive=" << aggressive
+                << " effective=" << (effective ? 1 : 0)
                 << " chance=" << sPlayerbotAIConfig.worldPvpAggressiveChance
                 << " stored=" << (storedChance.empty() ? "?" : storedChance)
                 << " level_diff=" << sPlayerbotAIConfig.worldPvpLevelDiff;
@@ -6536,9 +6538,11 @@ std::string PlayerbotAI::HandleRemoteCommand(std::string command)
             return "not random bot";
 
         uint32 aggressive = sRandomPlayerbotMgr.GetValue(bot, "world_pvp_aggressive");
+        bool effective = sRandomPlayerbotMgr.IsWorldPvpAggressive(bot);
         std::string storedChance = sRandomPlayerbotMgr.GetData(bot->GetGUIDLow(), "world_pvp_aggressive");
         std::ostringstream out;
         out << "world_pvp_aggressive=" << aggressive
+            << " effective=" << (effective ? 1 : 0)
             << " chance=" << sPlayerbotAIConfig.worldPvpAggressiveChance
             << " stored=" << (storedChance.empty() ? "?" : storedChance)
             << " level_diff=" << sPlayerbotAIConfig.worldPvpLevelDiff;

@@ -48,6 +48,22 @@ using namespace MaNGOS;
 
 INSTANTIATE_SINGLETON_1(RandomPlayerbotMgr);
 
+bool RandomPlayerbotMgr::IsWorldPvpAggressive(Player* bot)
+{
+    if (!bot || !bot->GetPlayerbotAI())
+        return false;
+
+    if (!IsRandomBot(bot))
+        return false;
+
+    // Temporary state gates: do not initiate world PvP while resurrection sick.
+    // Keeps the stored roll as a personality trait, while preventing aggression in vulnerable states.
+    if (bot->HasAura(SPELL_ID_PASSIVE_RESURRECTION_SICKNESS))
+        return false;
+
+    return GetValue(bot, "world_pvp_aggressive") != 0;
+}
+
 #ifdef CMANGOS
 #include <boost/thread/thread.hpp>
 #endif

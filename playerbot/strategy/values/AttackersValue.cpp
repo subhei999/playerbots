@@ -394,17 +394,6 @@ bool AttackersValue::IsValid(Unit* target, Player* player, Player* owner, bool c
         return true;
     };
 
-    auto isWorldPvpAggressive = [](Player* bot) -> bool
-    {
-        if (!bot || !bot->GetPlayerbotAI())
-            return false;
-
-        if (!sRandomPlayerbotMgr.IsRandomBot(bot))
-            return false;
-
-        return sRandomPlayerbotMgr.GetValue(bot, "world_pvp_aggressive") != 0;
-    };
-
     Player* playerToCheckAgainst = owner != nullptr ? owner : player;
 
     // Validate possible target
@@ -452,12 +441,12 @@ bool AttackersValue::IsValid(Unit* target, Player* player, Player* owner, bool c
             // For bot vs bot world PvP, require both to be aggressive.
             if (sRandomPlayerbotMgr.IsRandomBot(playerToCheckAgainst) &&
                 sRandomPlayerbotMgr.IsRandomBot(enemyPlayer) &&
-                (!isWorldPvpAggressive(playerToCheckAgainst) || !isWorldPvpAggressive(enemyPlayer)))
+                (!sRandomPlayerbotMgr.IsWorldPvpAggressive(playerToCheckAgainst) || !sRandomPlayerbotMgr.IsWorldPvpAggressive(enemyPlayer)))
             {
                 return false;
             }
 
-            if (!isWorldPvpAggressive(playerToCheckAgainst))
+            if (!sRandomPlayerbotMgr.IsWorldPvpAggressive(playerToCheckAgainst))
             {
                 bool attacking = isActivelyAttackingPlayerOrPet(target, playerToCheckAgainst);
                 if (!attacking)
