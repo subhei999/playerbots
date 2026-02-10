@@ -207,7 +207,6 @@ public:
     std::string randomBotAccountPrefix;
     uint32 randomBotAccountCount;
     bool deleteRandomBotAccounts;
-    bool logoutRandomBotOnDeath;
     uint32 randomBotGuildCount;
     bool deleteRandomBotGuilds;
     uint32 randomBotArenaTeamCount;

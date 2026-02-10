@@ -1389,7 +1389,7 @@ void PlayerbotMgr::SaveToDB()
 void PlayerbotMgr::OnBotLoginInternal(Player * const bot)
 {
     bot->GetPlayerbotAI()->SetMaster(master);
-    // Clear any pending logout flag from a prior death or random-bot cycle.
+    // Clear any pending logout flag from a prior random-bot cycle.
     // Without this, a bot moved from sRandomPlayerbotMgr into a player's
     // party can carry shouldLogOut=true, causing it to be immediately
     // logged out from inside UpdateSessions → ForEachPlayerbot, triggering
