@@ -97,11 +97,6 @@ class PlayerbotAIConfig
 {
 public:
     PlayerbotAIConfig();
-    static PlayerbotAIConfig& instance()
-    {
-        static PlayerbotAIConfig instance;
-        return instance;
-    }
 
 public:
     bool Initialize();
@@ -418,6 +413,5 @@ private:
     Config config;
 };
 
-PlayerbotAIConfig& GetPlayerbotAIConfig();
-#define sPlayerbotAIConfig GetPlayerbotAIConfig()
+#define sPlayerbotAIConfig MaNGOS::Singleton<PlayerbotAIConfig>::Instance()
 

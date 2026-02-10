@@ -30,20 +30,7 @@ std::vector<std::string> ConfigAccess::GetValues(const std::string& name) const
     return values;
 };
 
-PlayerbotAIConfig& GetPlayerbotAIConfig()
-{
-    static PlayerbotAIConfig instance;
-    return instance;
-}
-
-namespace MaNGOS
-{
-    template<>
-    PlayerbotAIConfig& Singleton<PlayerbotAIConfig, SingleThreaded<PlayerbotAIConfig>, OperatorNew<PlayerbotAIConfig>, ObjectLifeTime<PlayerbotAIConfig> >::Instance()
-    {
-        return GetPlayerbotAIConfig();
-    }
-}
+INSTANTIATE_SINGLETON_1(PlayerbotAIConfig);
 
 PlayerbotAIConfig::PlayerbotAIConfig()
 : enabled(false)
