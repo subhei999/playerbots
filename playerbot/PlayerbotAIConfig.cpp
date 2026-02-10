@@ -564,6 +564,8 @@ bool PlayerbotAIConfig::Initialize()
     broadcastChanceGuildManagement = config.GetIntDefault("AiPlayerbot.BroadcastChanceGuildManagement", 30000);
     ////////////////////////////
 
+    probHelpShout = config.GetIntDefault("AiPlayerbot.ProbHelpShout", 20);
+
     toxicLinksRepliesChance = config.GetIntDefault("AiPlayerbot.ToxicLinksRepliesChance", 30); //0-100
     thunderfuryRepliesChance = config.GetIntDefault("AiPlayerbot.ThunderfuryRepliesChance", 40); //0-100
     guildRepliesRate = config.GetIntDefault("AiPlayerbot.GuildRepliesRate", 100); //0-100
@@ -816,6 +818,8 @@ std::string PlayerbotAIConfig::GetValue(std::string name)
         out << worldPvpAggroTimeout;
     else if (name == "WorldPvpLevelDiff")
         out << worldPvpLevelDiff;
+    else if (name == "ProbHelpShout")
+        out << probHelpShout;
 
     else if (name == "SightDistance")
         out << sightDistance;
@@ -861,6 +865,8 @@ void PlayerbotAIConfig::SetValue(std::string name, std::string value)
         out >> worldPvpAggroTimeout;
     else if (name == "WorldPvpLevelDiff")
         out >> worldPvpLevelDiff;
+    else if (name == "ProbHelpShout")
+        out >> probHelpShout;
 
     else if (name == "SightDistance")
         out >> sightDistance;
