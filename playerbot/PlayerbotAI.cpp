@@ -1140,10 +1140,116 @@ void PlayerbotAI::RecordRecentPvpAttacker(Unit* victim, Unit* attacker)
 
             updateBot(member);
         }
-        return;
+    }
+    else
+    {
+        updateBot(victimOwner);
     }
 
-    updateBot(victimOwner);
+    if (sRandomPlayerbotMgr.IsRandomBot(victimOwner) && attackerPlayer->isRealPlayer() &&
+        sPlayerbotAIConfig.worldPvpAggroTimeout)
+    {
+        uint32 aggressive = sRandomPlayerbotMgr.GetValue(victimOwner, "world_pvp_aggressive");
+        if (!aggressive)
+        {
+            PlayerbotAI* victimAi = victimOwner->GetPlayerbotAI();
+            if (victimAi)
+            {
+                time_t lastShout = victimAi->GetAiObjectContext()->GetValue<time_t>("last said", "help")->Get();
+                if (time(0) - lastShout > 30 && urand(1, 100) <= sPlayerbotAIConfig.probHelpShout)
+                {
+                    victimAi->GetAiObjectContext()->GetValue<time_t>("last said", "help")->Set(time(0));
+
+                    std::vector<std::string> msgs = { "Help me!", "I'm under attack!", "Assist me!", "Help!" };
+                    std::string msg = msgs[urand(0, msgs.size() - 1)];
+                    victimAi->Yell(msg);
+
+                    const float helpRange = sPlayerbotAIConfig.reactDistance * sPlayerbotAIConfig.helpShoutRangeMultiplier;
+                    uint32 totalBots = 0, sameFaction = 0, sameMap = 0, inRange = 0, notified = 0, acknowledged = 0, ignored = 0, responseSuppressed = 0;
+                    sRandomPlayerbotMgr.ForEachPlayerbot([&](Player* bot)
+                    {
+                        if (!bot || !bot->IsInWorld() || bot == victimOwner)
+                            return;
+
+                        if (bot->GetSession()->isLogingOut())
+                            return;
+
+                        if (!sRandomPlayerbotMgr.IsRandomBot(bot))
+                            return;
+
+                        totalBots++;
+                        if (bot->GetTeam() != victimOwner->GetTeam())
+                            return;
+
+                        sameFaction++;
+                        if (bot->GetMapId() != victimOwner->GetMapId())
+                            return;
+
+                        sameMap++;
+                        if (sServerFacade.GetDistance2d(victimOwner, bot) <= helpRange)
+                        {
+                            inRange++;
+                            if (PlayerbotAI* botAi = bot->GetPlayerbotAI())
+                            {
+                                AiObjectContext* aiContext = botAi->GetAiObjectContext();
+                                if (!aiContext)
+                                    return;
+
+                                bool willAssist = urand(1, 100) <= sPlayerbotAIConfig.probHelpShoutAssist;
+                                time_t now = time(0);
+                                time_t lastResponse = aiContext->GetValue<time_t>("last said", "help_response")->Get();
+                                bool canRespond = (now - lastResponse) > static_cast<time_t>(sPlayerbotAIConfig.helpShoutResponseCooldown);
+                                time_t responseDue = aiContext->GetValue<time_t>("last said", "help_response_due")->Get();
+                                std::string pendingResponse = aiContext->GetValue<std::string>("manual string", "help_response_msg")->Get();
+                                bool hasPendingResponse = responseDue && !pendingResponse.empty() && now < responseDue;
+
+                                if (willAssist)
+                                {
+                                    botAi->UpdateRecentPvpAttacker(attackerPlayer);
+                                    notified++;
+
+                                    if (canRespond && !hasPendingResponse)
+                                    {
+                                        uint32 delay = urand(sPlayerbotAIConfig.helpShoutResponseDelayMin, sPlayerbotAIConfig.helpShoutResponseDelayMax);
+                                        static const std::vector<std::string> acknowledgeMsgs = { "I'm coming!", "On my way!", "Hold on, I'm helping!", "Stay with me, I'll help!" };
+                                        aiContext->GetValue<std::string>("manual string", "help_response_msg")->Set(acknowledgeMsgs[urand(0, acknowledgeMsgs.size() - 1)]);
+                                        aiContext->GetValue<time_t>("last said", "help_response_due")->Set(now + delay);
+                                        acknowledged++;
+                                    }
+                                    else
+                                    {
+                                        responseSuppressed++;
+                                    }
+                                }
+                                else
+                                {
+                                    if (canRespond && !hasPendingResponse)
+                                    {
+                                        uint32 delay = urand(sPlayerbotAIConfig.helpShoutResponseDelayMin, sPlayerbotAIConfig.helpShoutResponseDelayMax);
+                                        static const std::vector<std::string> ignoreMsgs = { "You're on your own!", "I can't help now!", "Not my fight!", "I won't get involved!" };
+                                        aiContext->GetValue<std::string>("manual string", "help_response_msg")->Set(ignoreMsgs[urand(0, ignoreMsgs.size() - 1)]);
+                                        aiContext->GetValue<time_t>("last said", "help_response_due")->Set(now + delay);
+                                        ignored++;
+                                    }
+                                    else
+                                    {
+                                        responseSuppressed++;
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    if (sPlayerbotAIConfig.debugHelpShout)
+                    {
+                        sLog.outString("[HelpShout] %s shouted for help vs %s: totalBots=%u sameFaction=%u sameMap=%u inRange=%u notified=%u queuedAck=%u queuedIgnore=%u suppressed=%u (range=%.0f)",
+                            victimOwner->GetName(), attackerPlayer->GetName(), totalBots, sameFaction, sameMap, inRange, notified, acknowledged, ignored, responseSuppressed,
+                            helpRange);
+                    }
+                }
+            }
+        }
+    }
 }
 
 void PlayerbotAI::UpdateRecentPvpAttacker(Player* attacker)
@@ -1178,6 +1284,24 @@ namespace ai
 void PlayerbotAI::HandleCommands()
 {
     ExternalEventHelper helper(aiObjectContext);
+
+    // Delayed help-response yell (queued by shout-for-help logic).
+    if (aiObjectContext)
+    {
+        time_t helpResponseDue = aiObjectContext->GetValue<time_t>("last said", "help_response_due")->Get();
+        if (helpResponseDue && time(0) >= helpResponseDue)
+        {
+            std::string helpResponseMsg = aiObjectContext->GetValue<std::string>("manual string", "help_response_msg")->Get();
+            aiObjectContext->GetValue<time_t>("last said", "help_response_due")->Set(0);
+
+            if (!helpResponseMsg.empty())
+            {
+                Yell(helpResponseMsg);
+                aiObjectContext->GetValue<time_t>("last said", "help_response")->Set(time(0));
+                aiObjectContext->GetValue<std::string>("manual string", "help_response_msg")->Set("");
+            }
+        }
+    }
     std::list<ChatCommandHolder> delayed;
     while (!chatCommands.empty())
     {

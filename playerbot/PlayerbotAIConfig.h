@@ -307,6 +307,14 @@ public:
 
     uint32 broadcastChanceGuildManagement;
 
+    uint32 probHelpShout;
+    uint32 probHelpShoutAssist;
+    uint32 helpShoutResponseCooldown;
+    uint32 helpShoutResponseDelayMin;
+    uint32 helpShoutResponseDelayMax;
+    float helpShoutRangeMultiplier;
+    bool debugHelpShout;
+
     uint32 guildRepliesRate;
 
     uint32 botAcceptDuelMinimumLevel;

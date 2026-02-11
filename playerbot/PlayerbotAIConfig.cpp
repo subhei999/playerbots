@@ -124,7 +124,7 @@ bool PlayerbotAIConfig::Initialize()
     reactDelay = (uint32) config.GetIntDefault("AiPlayerbot.ReactDelay", 100);
     passiveDelay = (uint32) config.GetIntDefault("AiPlayerbot.PassiveDelay", 4000);
     worldPvpAggroTimeout = (uint32) config.GetIntDefault("AiPlayerbot.WorldPvpAggroTimeout", 10);
-    worldPvpAggressiveChance = (uint32) config.GetIntDefault("AiPlayerbot.WorldPvpAggressiveChance", 20);
+    worldPvpAggressiveChance = (uint32) config.GetIntDefault("AiPlayerbot.WorldPvpAggressiveChance", 5);
     worldPvpLevelDiff = (uint32) config.GetIntDefault("AiPlayerbot.WorldPvpLevelDiff", 5);
     repeatDelay = (uint32) config.GetIntDefault("AiPlayerbot.RepeatDelay", 5000);
     errorDelay = (uint32) config.GetIntDefault("AiPlayerbot.ErrorDelay", 5000);
@@ -563,6 +563,18 @@ bool PlayerbotAIConfig::Initialize()
     broadcastChanceGuildManagement = config.GetIntDefault("AiPlayerbot.BroadcastChanceGuildManagement", 30000);
     ////////////////////////////
 
+    probHelpShout = config.GetIntDefault("AiPlayerbot.ProbHelpShout", 50);
+    probHelpShoutAssist = config.GetIntDefault("AiPlayerbot.ProbHelpShoutAssist", 50);
+    helpShoutResponseCooldown = config.GetIntDefault("AiPlayerbot.HelpShoutResponseCooldown", 20);
+    helpShoutResponseDelayMin = config.GetIntDefault("AiPlayerbot.HelpShoutResponseDelayMin", 1);
+    helpShoutResponseDelayMax = config.GetIntDefault("AiPlayerbot.HelpShoutResponseDelayMax", 4);
+    if (helpShoutResponseDelayMax < helpShoutResponseDelayMin)
+        helpShoutResponseDelayMax = helpShoutResponseDelayMin;
+    helpShoutRangeMultiplier = config.GetFloatDefault("AiPlayerbot.HelpShoutRangeMultiplier", 1.0f);
+    if (helpShoutRangeMultiplier < 0.0f)
+        helpShoutRangeMultiplier = 0.0f;
+    debugHelpShout = config.GetBoolDefault("AiPlayerbot.DebugHelpShout", false);
+
     toxicLinksRepliesChance = config.GetIntDefault("AiPlayerbot.ToxicLinksRepliesChance", 30); //0-100
     thunderfuryRepliesChance = config.GetIntDefault("AiPlayerbot.ThunderfuryRepliesChance", 40); //0-100
     guildRepliesRate = config.GetIntDefault("AiPlayerbot.GuildRepliesRate", 100); //0-100
@@ -815,6 +827,18 @@ std::string PlayerbotAIConfig::GetValue(std::string name)
         out << worldPvpAggroTimeout;
     else if (name == "WorldPvpLevelDiff")
         out << worldPvpLevelDiff;
+    else if (name == "ProbHelpShout")
+        out << probHelpShout;
+    else if (name == "ProbHelpShoutAssist")
+        out << probHelpShoutAssist;
+    else if (name == "HelpShoutResponseCooldown")
+        out << helpShoutResponseCooldown;
+    else if (name == "HelpShoutResponseDelayMin")
+        out << helpShoutResponseDelayMin;
+    else if (name == "HelpShoutResponseDelayMax")
+        out << helpShoutResponseDelayMax;
+    else if (name == "HelpShoutRangeMultiplier")
+        out << helpShoutRangeMultiplier;
 
     else if (name == "SightDistance")
         out << sightDistance;
@@ -860,6 +884,18 @@ void PlayerbotAIConfig::SetValue(std::string name, std::string value)
         out >> worldPvpAggroTimeout;
     else if (name == "WorldPvpLevelDiff")
         out >> worldPvpLevelDiff;
+    else if (name == "ProbHelpShout")
+        out >> probHelpShout;
+    else if (name == "ProbHelpShoutAssist")
+        out >> probHelpShoutAssist;
+    else if (name == "HelpShoutResponseCooldown")
+        out >> helpShoutResponseCooldown;
+    else if (name == "HelpShoutResponseDelayMin")
+        out >> helpShoutResponseDelayMin;
+    else if (name == "HelpShoutResponseDelayMax")
+        out >> helpShoutResponseDelayMax;
+    else if (name == "HelpShoutRangeMultiplier")
+        out >> helpShoutRangeMultiplier;
 
     else if (name == "SightDistance")
         out >> sightDistance;
