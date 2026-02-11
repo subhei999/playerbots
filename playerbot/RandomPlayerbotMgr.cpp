@@ -3138,8 +3138,27 @@ uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, std::string event)
 
 int32 RandomPlayerbotMgr::GetValueValidTime(uint32 bot, std::string event)
 {
-    if (eventCache.find(bot) == eventCache.end())
-        return 0;
+    // Ensure cache is populated from DB before checking (same as GetEventValue).
+    // Without this, after server restart the cache is empty and we'd always return 0,
+    // causing bots to reroll aggressive on every login instead of using persisted value.
+    if (eventCache[bot].empty())
+    {
+        auto results = CharacterDatabase.PQuery("SELECT `event`, `value`, `time`, validIn, `data` FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '%u'", bot);
+        if (results)
+        {
+            do
+            {
+                Field* fields = results->Fetch();
+                std::string eventName = fields[0].GetString();
+                CachedEvent e;
+                e.value = fields[1].GetUInt32();
+                e.lastChangeTime = fields[2].GetUInt32();
+                e.validIn = fields[3].GetUInt32();
+                e.data = fields[4].GetString();
+                eventCache[bot][eventName] = e;
+            } while (results->NextRow());
+        }
+    }
 
     if (eventCache[bot].find(event) == eventCache[bot].end())
         return 0;
@@ -3151,32 +3170,38 @@ int32 RandomPlayerbotMgr::GetValueValidTime(uint32 bot, std::string event)
 
 std::string RandomPlayerbotMgr::GetEventData(uint32 bot, std::string event)
 {
-    std::string data = "";
-    if (GetEventValue(bot, event))
-    {
-        CachedEvent e = eventCache[bot][event];
-        data = e.data;
-    }
-    return data;
+    GetEventValue(bot, event);  // ensure cache is populated
+    if (eventCache[bot].find(event) != eventCache[bot].end())
+        return eventCache[bot][event].data;
+    return "";
 }
 
 uint32 RandomPlayerbotMgr::SetEventValue(uint32 bot, std::string event, uint32 value, uint32 validIn, std::string data)
 {
-    CharacterDatabase.PExecute("DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '%u' AND event = '%s'",
-            bot, event.c_str());
-    if (value)
+    // Use hardcoded event name for world_pvp_aggressive to avoid format-string issues; always delete ALL matching rows to prevent duplicates
+    if (event == "world_pvp_aggressive")
+        CharacterDatabase.PExecute("DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = %u AND event = 'world_pvp_aggressive'", bot);
+    else
+        CharacterDatabase.PExecute("DELETE FROM ai_playerbot_random_bots WHERE owner = 0 AND bot = '%u' AND event = '%s'", bot, event.c_str());
+
+    bool shouldInsert = value != 0;
+    // world_pvp_aggressive: persist even when value=0 so we retain data (aggressiveChanceStr) and avoid re-rolling on every load
+    if (event == "world_pvp_aggressive" && data != "")
+        shouldInsert = true;
+
+    if (shouldInsert)
     {
         if (data != "")
         {
             CharacterDatabase.PExecute(
-                "INSERT INTO ai_playerbot_random_bots (owner, bot, `time`, validIn, event, `value`, `data`) VALUES ('%u', '%u', '%u', '%u', '%s', '%u', '%s')",
-                0, bot, (uint32)time(0), validIn, event.c_str(), value, data.c_str());
+                "INSERT INTO ai_playerbot_random_bots (owner, bot, `time`, validIn, event, `value`, `data`) VALUES (0, %u, %u, %u, '%s', %u, '%s')",
+                bot, (uint32)time(0), validIn, event.c_str(), value, data.c_str());
         }
         else
         {
             CharacterDatabase.PExecute(
-                "INSERT INTO ai_playerbot_random_bots (owner, bot, `time`, validIn, event, `value`) VALUES ('%u', '%u', '%u', '%u', '%s', '%u')",
-                0, bot, (uint32)time(0), validIn, event.c_str(), value);
+                "INSERT INTO ai_playerbot_random_bots (owner, bot, `time`, validIn, event, `value`) VALUES (0, %u, %u, %u, '%s', %u)",
+                bot, (uint32)time(0), validIn, event.c_str(), value);
         }
     }
 
@@ -3608,11 +3633,11 @@ void RandomPlayerbotMgr::PrintStats(uint32 requesterGuid)
         perClass[cls] = 0;
     }
 
-    uint32 dps = 0, heal = 0, tank = 0, active = 0, update = 0, randomize = 0, teleport = 0, changeStrategy = 0, dead = 0, combat = 0, revive = 0, taxi = 0, moving = 0, mounted = 0, afk = 0;
+    uint32 dps = 0, heal = 0, tank = 0, active = 0, update = 0, randomize = 0, teleport = 0, changeStrategy = 0, dead = 0, combat = 0, revive = 0, taxi = 0, moving = 0, mounted = 0, afk = 0, aggressive = 0;
     int stateCount[(uint8)TravelState::MAX_TRAVEL_STATE + 1] = { 0 };
     std::vector<std::pair<Quest const*, int32>> questCount;
 
-    ForEachPlayerbot([this, &dps, &heal, &tank, &active, &update, &randomize, &teleport, &changeStrategy, &dead, &combat, &revive, &taxi, &moving, &mounted, &afk, &alliance, &horde, &perRace, &perClass, &stateCount, &questCount](Player* bot)
+    ForEachPlayerbot([this, &dps, &heal, &tank, &active, &update, &randomize, &teleport, &changeStrategy, &dead, &combat, &revive, &taxi, &moving, &mounted, &afk, &aggressive, &alliance, &horde, &perRace, &perClass, &stateCount, &questCount](Player* bot)
     {
         if (IsAlliance(bot->getRace()))
             alliance[bot->GetLevel() / 10]++;
@@ -3652,6 +3677,9 @@ void RandomPlayerbotMgr::PrintStats(uint32 requesterGuid)
 
         if (bot->isAFK())
             afk++;
+
+        if (IsWorldPvpAggressive(bot))
+            aggressive++;
 
         if (sServerFacade.UnitIsDead(bot))
         {
@@ -3776,6 +3804,12 @@ void RandomPlayerbotMgr::PrintStats(uint32 requesterGuid)
     if (requester) { requester->SendMessageToPlayer(ss.str()); }
 
     ss.str(""); ss << "    Active: " << active;
+    sLog.outString("%s", ss.str().c_str());
+    if (requester) { requester->SendMessageToPlayer(ss.str()); }
+
+    uint32 totalOnline = GetPlayerbotsAmount();
+    float aggressivePct = totalOnline ? (100.0f * aggressive / totalOnline) : 0.0f;
+    ss.str(""); ss << "    World PvP aggressive: " << aggressive << " / " << totalOnline << " (" << std::fixed << std::setprecision(1) << aggressivePct << "%)";
     sLog.outString("%s", ss.str().c_str());
     if (requester) { requester->SendMessageToPlayer(ss.str()); }
 
