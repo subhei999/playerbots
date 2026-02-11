@@ -305,6 +305,9 @@ void AttackersValue::AddTargetsOf(Player* player, std::set<Unit*>& targets, std:
 
 bool AttackersValue::InCombat(Unit* target, Player* player, bool checkPullTargets)
 {
+    if (!target || !player)
+        return false;
+
     // Check if the the target is attacking the player
     bool inCombat = (target->getThreatManager().getThreat(player) > 0.0f) ||
                     (target->GetVictim() && (target->GetVictim() == player));
@@ -331,6 +334,9 @@ bool AttackersValue::InCombat(Unit* target, Player* player, bool checkPullTarget
 
 bool AttackersValue::IsValid(Unit* target, Player* player, Player* owner, bool checkInCombat, bool validatePossibleTarget)
 {
+    if (!target || !player)
+        return false;
+
     auto isActivelyAttackingPlayerOrPet = [](Unit* enemy, Player* victim) -> bool
     {
         if (!enemy || !victim)
@@ -428,14 +434,6 @@ bool AttackersValue::IsValid(Unit* target, Player* player, Player* owner, bool c
 #ifndef MANGOSBOT_ZERO
         inWorld = inWorld && !playerToCheckAgainst->InArena();
 #endif
-        if (inWorld && !duelOpponent && sPlayerbotAIConfig.worldPvpLevelDiff > 0)
-        {
-            int32 levelDiff = int32(enemyPlayer->GetLevel()) - int32(playerToCheckAgainst->GetLevel());
-            if (levelDiff < 0)
-                levelDiff = -levelDiff;
-            if (levelDiff > int32(sPlayerbotAIConfig.worldPvpLevelDiff))
-                return false;
-        }
         if (inWorld && !duelOpponent)
         {
             // For bot vs bot world PvP, require both to be aggressive.
@@ -446,29 +444,41 @@ bool AttackersValue::IsValid(Unit* target, Player* player, Player* owner, bool c
                 return false;
             }
 
-            if (!sRandomPlayerbotMgr.IsWorldPvpAggressive(playerToCheckAgainst))
+            // Retaliation detection: if they are attacking (or recently damaged us / our group),
+            // we must NOT block the target based on level difference.
+            bool attacking = isActivelyAttackingPlayerOrPet(target, playerToCheckAgainst);
+            if (!attacking)
             {
-                bool attacking = isActivelyAttackingPlayerOrPet(target, playerToCheckAgainst);
+                attacking = wasRecentlyDamagedBy(playerToCheckAgainst);
+            }
+            if (!attacking && player && player != playerToCheckAgainst)
+            {
+                attacking = isActivelyAttackingPlayerOrPet(target, player);
                 if (!attacking)
                 {
-                    attacking = wasRecentlyDamagedBy(playerToCheckAgainst);
+                    attacking = wasRecentlyDamagedBy(player);
                 }
-                if (!attacking && player && player != playerToCheckAgainst)
-                {
-                    attacking = isActivelyAttackingPlayerOrPet(target, player);
-                    if (!attacking)
-                    {
-                        attacking = wasRecentlyDamagedBy(player);
-                    }
-                }
+            }
 
+            // Only apply level-diff filtering when INITIATING (not when retaliating).
+            if (!attacking && sPlayerbotAIConfig.worldPvpLevelDiff > 0)
+            {
+                int32 levelDiff = int32(enemyPlayer->GetLevel()) - int32(playerToCheckAgainst->GetLevel());
+                if (levelDiff < 0)
+                    levelDiff = -levelDiff;
+                if (levelDiff > int32(sPlayerbotAIConfig.worldPvpLevelDiff))
+                    return false;
+            }
+
+            if (!sRandomPlayerbotMgr.IsWorldPvpAggressive(playerToCheckAgainst))
+            {
                 if (!attacking)
                     return false;
             }
         }
 
         // Don't check distance on duel opponents
-        if (!player->duel || (player->duel && (player->duel->opponent != target)))
+        if (!duelOpponent)
         {
             // If the enemy player is not within sight distance
             if (!enemyPlayer->IsWithinDist(playerToCheckAgainst, EnemyPlayerValue::GetMaxAttackDistance(playerToCheckAgainst), false))
@@ -520,6 +530,9 @@ bool AttackersValue::IsValid(Unit* target, Player* player, Player* owner, bool c
 
 bool AttackersValue::IgnoreTarget(Unit* target, Player* playerToCheckAgainst)
 {
+    if (!target || !playerToCheckAgainst)
+        return false;
+
     if (!playerToCheckAgainst->GetPlayerbotAI())
         return false; 
 
