@@ -287,6 +287,10 @@ namespace ai
             creators["end magmadar fight"] = [](PlayerbotAI* ai) { return new MagmadarEndFightTrigger(ai); };
             creators["magmadar lava bomb"] = [](PlayerbotAI* ai) { return new MagmadarLavaBombTrigger(ai); };
             creators["magmadar too close"] = [](PlayerbotAI* ai) { return new MagmadarTooCloseTrigger(ai); };
+            creators["start ragnaros fight"] = [](PlayerbotAI* ai) { return new RagnarosStartFightTrigger(ai); };
+            creators["end ragnaros fight"] = [](PlayerbotAI* ai) { return new RagnarosEndFightTrigger(ai); };
+            creators["ragnaros spread required"] = [](PlayerbotAI* ai) { return new RagnarosSpreadRequiredTrigger(ai); };
+            creators["ragnaros pre spread required"] = [](PlayerbotAI* ai) { return new RagnarosPreSpreadRequiredTrigger(ai); };
 
             creators["fire protection potion ready"] = [](PlayerbotAI* ai) { return new FireProtectionPotionReadyTrigger(ai); };
 

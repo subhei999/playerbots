@@ -29,6 +29,18 @@ namespace ai
         MagmadarDisableFightStrategyAction(PlayerbotAI* ai) : ChangeAllStrategyAction(ai, "disable magmadar fight strategy", "-magmadar") {}
     };
 
+    class RagnarosEnableFightStrategyAction : public ChangeAllStrategyAction
+    {
+    public:
+        RagnarosEnableFightStrategyAction(PlayerbotAI* ai) : ChangeAllStrategyAction(ai, "enable ragnaros fight strategy", "+ragnaros") {}
+    };
+
+    class RagnarosDisableFightStrategyAction : public ChangeAllStrategyAction
+    {
+    public:
+        RagnarosDisableFightStrategyAction(PlayerbotAI* ai) : ChangeAllStrategyAction(ai, "disable ragnaros fight strategy", "-ragnaros") {}
+    };
+
     class MagmadarMoveAwayFromLavaBombAction : public MoveAwayFromHazard
     {
     public:
@@ -39,6 +51,14 @@ namespace ai
     {
     public:
         MagmadarMoveAwayAction(PlayerbotAI* ai) : MoveAwayFromCreature(ai, "move away from magmadar", 11982, 31.0f) {}
+    };
+
+    class SpreadAroundRagnarosAction : public MovementAction
+    {
+    public:
+        SpreadAroundRagnarosAction(PlayerbotAI* ai) : MovementAction(ai, "spread around ragnaros") {}
+        bool Execute(Event& event) override;
+        bool isPossible() override { return MovementAction::isPossible() && ai->CanMove(); }
     };
 
     class MoveToMCRuneAction : public MoveToAction

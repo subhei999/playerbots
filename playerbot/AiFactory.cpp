@@ -295,6 +295,7 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
 
     if (!player->InBattleGround())
     {
+        combatEngine->addStrategy("dungeon");
         combatEngine->addStrategies("racials", "default", "duel", "pvp", NULL);
     }
 
@@ -846,6 +847,7 @@ void AiFactory::AddDefaultNonCombatStrategies(Player* player, PlayerbotAI* const
 
     if (!player->InBattleGround())
     {
+        nonCombatEngine->addStrategy("dungeon");
         PlayerbotAI* ai = player->GetPlayerbotAI();
         Player* master = ai ? ai->GetMaster() : nullptr;
 

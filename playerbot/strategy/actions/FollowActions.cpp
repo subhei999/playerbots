@@ -35,6 +35,16 @@ bool FollowAction::isUseful()
     if (!ai->CanMove())
         return false;
 
+    // In Ragnaros lair, let pre-pull positioning take control instead of follow loops.
+    if (!ai->IsStateActive(BotState::BOT_STATE_COMBAT) && bot->GetMapId() == 409 && ai->HasStrategy("molten core", BotState::BOT_STATE_NON_COMBAT))
+    {
+        static constexpr float centerX = 848.933f;
+        static constexpr float centerY = -812.875f;
+        static constexpr float lairRadius = 130.0f;
+        if (bot->GetDistance2d(centerX, centerY) <= lairRadius)
+            return false;
+    }
+
     float distance = 0;
     Unit* followTarget = AI_VALUE(Unit*, "follow target");
     Formation* formation = AI_VALUE(Formation*, "formation");

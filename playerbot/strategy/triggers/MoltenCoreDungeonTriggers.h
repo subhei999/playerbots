@@ -28,6 +28,32 @@ namespace ai
         MagmadarEndFightTrigger(PlayerbotAI* ai) : EndBossFightTrigger(ai, "end magmadar fight", "magmadar", 11982) {}
     };
 
+    class RagnarosStartFightTrigger : public StartBossFightTrigger
+    {
+    public:
+        RagnarosStartFightTrigger(PlayerbotAI* ai) : StartBossFightTrigger(ai, "start ragnaros fight", "ragnaros", 11502) {}
+    };
+
+    class RagnarosEndFightTrigger : public EndBossFightTrigger
+    {
+    public:
+        RagnarosEndFightTrigger(PlayerbotAI* ai) : EndBossFightTrigger(ai, "end ragnaros fight", "ragnaros", 11502) {}
+    };
+
+    class RagnarosSpreadRequiredTrigger : public Trigger
+    {
+    public:
+        RagnarosSpreadRequiredTrigger(PlayerbotAI* ai) : Trigger(ai, "ragnaros spread required", 1) {}
+        bool IsActive() override;
+    };
+
+    class RagnarosPreSpreadRequiredTrigger : public Trigger
+    {
+    public:
+        RagnarosPreSpreadRequiredTrigger(PlayerbotAI* ai) : Trigger(ai, "ragnaros pre spread required", 2) {}
+        bool IsActive() override;
+    };
+
     class MagmadarLavaBombTrigger : public CloseToGameObjectHazardTrigger
     {
     public:

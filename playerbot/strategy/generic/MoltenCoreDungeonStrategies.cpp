@@ -10,6 +10,10 @@ void MoltenCoreDungeonStrategy::InitCombatTriggers(std::list<TriggerNode*>& trig
     triggers.push_back(new TriggerNode(
         "start magmadar fight",
         NextAction::array(0, new NextAction("enable magmadar fight strategy", 100.0f), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "start ragnaros fight",
+        NextAction::array(0, new NextAction("enable ragnaros fight strategy", 100.0f), NULL)));
 }
 
 void MoltenCoreDungeonStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
@@ -41,6 +45,13 @@ void MoltenCoreDungeonStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& t
     triggers.push_back(new TriggerNode(
         "fire protection potion ready",
         NextAction::array(0, new NextAction("fire protection potion", 100.0f), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "ragnaros pre spread required",
+        NextAction::array(0,
+            new NextAction("stop follow", 100.0f),
+            new NextAction("spread around ragnaros", 99.0f),
+            NULL)));
 }
 
 void MagmadarFightStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
@@ -86,4 +97,25 @@ void MagmadarFightStrategy::InitCombatMultipliers(std::list<Multiplier*>& multip
     {
         multipliers.push_back(new PreventMoveAwayFromCreatureOnReachToCastMultiplier(ai));
     }
+}
+
+void RagnarosFightStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    triggers.push_back(new TriggerNode(
+        "fire protection potion ready",
+        NextAction::array(0, new NextAction("fire protection potion", 90.0f), NULL)));
+}
+
+void RagnarosFightStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    triggers.push_back(new TriggerNode(
+        "end ragnaros fight",
+        NextAction::array(0, new NextAction("disable ragnaros fight strategy", 100.0f), NULL)));
+}
+
+void RagnarosFightStrategy::InitDeadTriggers(std::list<TriggerNode*>& triggers)
+{
+    triggers.push_back(new TriggerNode(
+        "end ragnaros fight",
+        NextAction::array(0, new NextAction("disable ragnaros fight strategy", 100.0f), NULL)));
 }
